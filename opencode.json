@@ -23,7 +23,23 @@
       "description": "Builder. Before doing anything, read AGENTS.md then agents/builder.md in full and follow it.",
       "mode": "primary",
       "model": "ollama-builder/qwen3-coder-next:latest",
-      "tools": { "write": true, "edit": true, "bash": true }
+      "tools": { "write": true, "edit": true, "bash": true },
+      "permission": {
+        "bash": {
+          "*": "allow",
+          "pip install*": "deny",
+          "pip3 install*": "deny",
+          "python -m pip install*": "deny",
+          "python3 -m pip install*": "deny",
+          "apt install*": "deny",
+          "apt-get install*": "deny",
+          "sudo apt install*": "deny",
+          "sudo apt-get install*": "deny",
+          "conda install*": "deny",
+          "npm install*": "deny",
+          "npm i *": "deny"
+        }
+      }
     },
     "reviewer": {
       "description": "Reviewer. Before doing anything, read AGENTS.md then agents/reviewer.md in full and follow it. Visual QA only — no code editing, no shell commands.",

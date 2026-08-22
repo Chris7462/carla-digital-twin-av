@@ -54,6 +54,19 @@ Read, in this order:
   then wait. Don't work around a missing package by hand-rolling a
   substitute; that reintroduces the exact risk the "use established
   libraries" rule above exists to avoid.
+- **Never substitute dummy, synthetic, or placeholder data for a core
+  step that fails to run** (crash, core dump, exception, hang) —
+  not even to "confirm the rest of the pipeline works." An
+  `eval_report.json` produced from fake input is indistinguishable
+  from a real one once it's sitting on disk, and a plausible-looking
+  wrong number is worse than no number: it can pass review or clear a
+  threshold by accident, and nothing downstream will know it's fake.
+  If a core step (KISS-ICP, GTSAM optimization, etc.) fails to run,
+  that's a crash to debug and report — see "If a core step crashes or
+  fails to run" below — not something to route around so the rest of
+  the pipeline has something to consume. This applies regardless of
+  framing: "just to test the plumbing," "temporary," and "as a
+  reference point" are all the same substitution and the same risk.
 
 ## Test cases
 
@@ -77,6 +90,9 @@ outputs/run_<description>/
   map_render_{top,side,front}.png
 ```
 
+Every file in this folder must come from a real run of the actual
+method. No placeholder outputs — see the constraint above.
+
 ## When a run finishes
 
 Append one line to `PROJECT_STATUS.md` at the repo root: what you ran,
@@ -84,6 +100,23 @@ Append one line to `PROJECT_STATUS.md` at the repo root: what you ran,
 threshold in `docs/done-criteria.md`. Don't write more than that —
 status detail belongs in the run's own `eval_report.json`, not in the
 status log.
+
+## If a core step crashes or fails to run
+
+This includes core dumps, unhandled exceptions, hangs, or any other
+failure that stops a core step (KISS-ICP, GTSAM optimization, evo)
+from producing real output. Debug it like any other bug first —
+check input shapes/dtypes against what the library expects, check the
+library version, try the smallest reproducible case (e.g. one frame)
+before the full sequence. If you can't resolve it, stop and report:
+
+- What failed and the exact error/crash signature
+- What you already tried
+- Your best guess at the cause (bad input format, version mismatch,
+  API misuse, etc.)
+
+Then wait. Do not produce a placeholder result to keep the pipeline
+moving — see the hard constraint above.
 
 ## If a run doesn't clear the threshold
 
