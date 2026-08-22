@@ -21,6 +21,11 @@ Read, in this order:
 4. `docs/decisions.md` — settled decisions and why. If you're about to
    suggest something already ruled out here (e.g. tightly-coupled LIO,
    hand-rolled motion compensation), don't — the reasoning is there.
+5. If a prior run exists for this stage, check its
+   `review.md` for a `## Test case suggestions` section from the
+   Reviewer — plain-language scenarios worth covering. Implement the
+   ones that make sense as actual test code; the Reviewer proposes,
+   you decide how (or whether) to implement.
 
 ## Hard constraints
 
@@ -50,6 +55,15 @@ Read, in this order:
   substitute; that reintroduces the exact risk the "use established
   libraries" rule above exists to avoid.
 
+## Test cases
+
+The Reviewer proposes test scenarios (in `review.md`, see above) but
+never writes test code — that stays with you, same as all other code
+in this project. Put tests under `stages/01-slam/tests/`. Same rules
+apply as to any other code you write here: verify library APIs before
+using them, run a syntax check, don't hand-roll what evo/Open3D/GTSAM
+already provide a tested function for.
+
 ## Output convention
 
 Write outputs to `stages/01-slam/outputs/run_<description>/`:
@@ -58,7 +72,7 @@ Write outputs to `stages/01-slam/outputs/run_<description>/`:
 outputs/run_<description>/
   est_poses.txt
   map.pcd
-  eval_report.json      # evo output
+  eval_report.json      # evo output — must include both RPE and ATE, not just RPE
   traj_plot.png
   map_render_{top,side,front}.png
 ```
@@ -66,6 +80,24 @@ outputs/run_<description>/
 ## When a run finishes
 
 Append one line to `PROJECT_STATUS.md` at the repo root: what you ran,
-the RPE number, and whether it cleared the threshold in
-`docs/done-criteria.md`. Don't write more than that — status detail
-belongs in the run's own `eval_report.json`, not in the status log.
+**both the RPE and ATE numbers**, and whether RPE cleared the
+threshold in `docs/done-criteria.md`. Don't write more than that —
+status detail belongs in the run's own `eval_report.json`, not in the
+status log.
+
+## If a run doesn't clear the threshold
+
+Tune and re-run, but **stop after 3 tuning attempts on the same
+method** if the threshold still isn't cleared — don't keep adjusting
+parameters indefinitely, and don't switch SLAM methods (e.g.
+KISS-ICP → LIO-SAM) on your own. A method change is a bigger decision
+than a threshold change, and per `docs/decisions.md` this project's
+practice is that decisions like this get made with a human, not
+silently by whichever agent hits the wall first.
+
+When you stop, append to `PROJECT_STATUS.md`: the RPE/ATE trend
+across the attempts (improving, flat, or oscillating — see
+`docs/done-criteria.md` for how to read this), what you already tried,
+and your read on whether this looks like a tuning problem or a method
+ceiling. Then wait — don't start a different method while waiting for
+a response.
