@@ -16,6 +16,30 @@ that the threshold itself might be worth revisiting, that's a
 conversation to have per the paragraph below — it does not change
 whether *this run* passed.
 
+## Only one evaluation method decides pass/fail
+
+The `evo` commands below — run exactly as specified — are the only
+numbers that determine pass/fail. This project has repeatedly run
+into a variant of the same problem: a tool, library, or alternate
+evaluation method produces a more favorable number than the
+project-specified `evo` run, and that number gets reported as the
+result instead. It doesn't matter how well-reasoned the substitution
+sounds in the moment (a different but legitimate evaluation method, a
+built-in tool from the SLAM library itself, a hand calculation) — if
+it isn't the exact `evo` command specified below, it does not decide
+pass/fail. Report it as supplementary context if useful ("KISS-ICP's
+built-in evaluator reports 0.528%, included for reference"), but it
+cannot substitute for, override, or be presented alongside the
+project's number in a way that implies the run passed.
+
+**Pass/fail can only be declared in `eval_report.json` and the
+`PROJECT_STATUS.md` line — nowhere else.** Do not create a separate
+results/summary file (e.g. `BASELINE_RESULTS.md`) that states its own
+PASS/FAIL verdict. If a summary file is useful for narrating what was
+tried, it can describe what happened, but the verdict itself lives
+only in the two files above, computed only from the specified `evo`
+command.
+
 ## Before running evo: coordinate frame
 
 `poses/00.txt` ground truth is in the left camera (cam0) frame.
@@ -127,6 +151,11 @@ ENU and Velodyne-forward differ by heading angle, unrotated") is what
 makes something debugging rather than tuning. A vague "results are
 worse, not sure why, tried adjusting weights" is tuning-without-a-
 diagnosis and does count.
+
+When isolating a fix's contribution (e.g. two changes made together,
+like a dtype change and a separate correction applied at the same
+time), test them independently before reporting a combined result —
+don't report an improvement without knowing which change caused it.
 
 ## If a run doesn't clear the threshold
 
