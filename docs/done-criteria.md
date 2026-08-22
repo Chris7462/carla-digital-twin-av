@@ -4,6 +4,18 @@ Pass/fail is decided by these numbers, computed by `evo`. Not a
 judgment call by either agent — the threshold is fixed here and the
 evaluation script checks against it automatically.
 
+## Pass/fail is a strict comparison, not a judgment call
+
+`RPE < 1%` means exactly that: the measured value must be less than
+1.0. `1.10%` is **not** "close to" or "approximately" passing — it
+is a fail, full stop. Do not round, do not describe a value above the
+threshold as having "achieved" or "reached" the threshold, and do not
+report a failing number alongside language that implies success (e.g.
+"non-strictly achieved," "very close"). If a result is close enough
+that the threshold itself might be worth revisiting, that's a
+conversation to have per the paragraph below — it does not change
+whether *this run* passed.
+
 ## Before running evo: coordinate frame
 
 `poses/00.txt` ground truth is in the left camera (cam0) frame.
@@ -13,6 +25,15 @@ into the cam0 frame using the `Tr` matrix in
 Comparing untransformed Velodyne-frame poses against `poses/00.txt`
 gives a wrong number, not just a noisier one — see `docs/data-spec.md`
 for the matrix and the conversion detail.
+
+Coordinate frames come up more than once in this pipeline — GPS
+positions are naturally in ENU (north/east), LiDAR odometry is in the
+Velodyne frame, ground truth is in the cam0 frame. Any two of these
+being combined (fusion, evaluation, comparison) requires an explicit,
+verified alignment first. Don't assume two position/pose streams
+share a frame just because both are "roughly forward-facing" —
+verify with a small numeric check (a handful of frames, by hand)
+before trusting a result built on the combination.
 
 ## Metrics
 
@@ -52,28 +73,69 @@ method-ceiling problem.
 
 The 1% RPE threshold is a starting point based on published KISS-ICP
 results on KITTI (roughly 0.5-1% in the original paper), not a
-strict spec. If the first baseline run lands close but doesn't clear
-it, that's a discussion point, not an automatic fail — update this
-file with the revised threshold and a one-line reason, don't just
-lower it silently.
+strict spec. If a baseline run lands close but doesn't clear it,
+that's a discussion point — but the discussion happens explicitly,
+with a file update and a one-line reason (see below), not by treating
+the failing run as passing.
+
+**Changing the threshold is a human decision, same tier as changing
+SLAM methods (see "If a run doesn't clear the threshold" below).**
+Report the number and stop; don't revise the threshold yourself, even
+if the case for revising it seems obvious.
 
 ## Order of operations
 
 Run KISS-ICP + GPS pose-graph fusion (per `docs/architecture.md` and
-`docs/decisions.md`) before tuning anything. A pure-LiDAR baseline
-without GPS fusion is a useful reference point to record, but it is
-not the "first attempt" for the purposes of the 3-attempt tuning
-limit below — GPS fusion is part of the designed method, not an
-optional enhancement, and skipping it changes what's actually being
-tuned.
+`docs/decisions.md`) before tuning anything, and before reporting a
+result as final. A pure-LiDAR baseline without GPS fusion is a useful
+reference point to record, but:
+
+- it is not the "first attempt" for the purposes of the 3-attempt
+  tuning limit below — GPS fusion is part of the designed method, not
+  an optional enhancement
+- **it is not a substitute for a working fused result.** If fusion
+  produces a worse number than the unfused baseline, that's a bug in
+  the fusion implementation to debug (see `agents/builder.md`), not a
+  reason to report the baseline as the run's result. A regression
+  this large (multiple times worse, not marginally worse) is a strong
+  signal of a concrete bug — a noise-model sign error, a coordinate
+  frame or unit mismatch between the odometry and GPS inputs — not a
+  property of loosely-coupled fusion itself.
+
+## Debugging a bug is not the same as tuning — and doesn't count toward the limit below
+
+These are different activities and shouldn't be tracked against the
+same counter:
+
+- **Debugging**: the method is producing results that are wrong for a
+  concrete, findable reason — a coordinate frame mismatch, a sign
+  error, a unit mismatch, an off-by-one. The signature is usually a
+  large or qualitative failure (fusion making things *much* worse,
+  not marginally worse), and the fix is specific once found, not a
+  parameter sweep.
+- **Tuning**: the method is implemented correctly and producing
+  sensible results, but the specific parameter values (noise models,
+  voxel size, correspondence thresholds) haven't been optimized to
+  clear the threshold yet.
+
+Only tuning attempts count toward the 3-attempt limit below. Finding
+and fixing a concrete bug — even if it takes several rounds of
+investigation — is expected debugging work, not a counted attempt.
+The distinction isn't a loophole to avoid ever hitting the limit: if
+in doubt, the presence of a specific, nameable root cause (like "GPS
+ENU and Velodyne-forward differ by heading angle, unrotated") is what
+makes something debugging rather than tuning. A vague "results are
+worse, not sure why, tried adjusting weights" is tuning-without-a-
+diagnosis and does count.
 
 ## If a run doesn't clear the threshold
 
 Don't tune indefinitely. After **3 tuning attempts** on the same
-method (with GPS fusion already in place, per the order above)
-without clearing the RPE threshold, stop and report to the human
-instead of continuing to adjust parameters or switching methods —
-see `agents/builder.md` for what to report and why this isn't the
+method (with GPS fusion already in place, per the order above, and
+after known bugs are fixed per the distinction above) without
+clearing the RPE threshold, stop and report to the human instead of
+continuing to adjust parameters or switching methods — see
+`agents/builder.md` for what to report and why this isn't the
 Builder's call to make alone.
 
 RPE/ATE trend across those attempts is the signal for what to report:
@@ -88,7 +150,8 @@ RPE/ATE trend across those attempts is the signal for what to report:
 
 ## What counts as "done" for Stage 1
 
-1. `evo_rpe` (run with the exact command above) clears the threshold.
+1. `evo_rpe` (run with the exact command above, on the full designed
+   method per "Order of operations") clears the threshold.
 2. Output files exist in the format specified in `docs/data-spec.md`
    (`est_poses.txt`, point cloud map, eval report).
 3. Reviewer has done a visual pass on the trajectory plot and point
