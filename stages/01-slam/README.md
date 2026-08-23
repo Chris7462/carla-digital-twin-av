@@ -16,10 +16,10 @@ Exact file paths/formats: `docs/data-spec.md`. Pass/fail criteria:
   └────────────┬──────────────┘              └────────────┬──────────────┘
                │                                          │
                ▼                                          ▼
-      ┌────────────── ───────┐                     ┌──────────────────── ┐
+      ┌──────────────────────┐                     ┌─────────────────────┐
       │  KISS-ICP's own      │                     │  lat/lon -> ENU     │
       │  dataset/pipeline API│                     │  local coordinates  │
-      │  (not hand-rolled —  │                     └─ ────────┬──────────┘
+      │  (not hand-rolled —  │                     └──────────┬──────────┘
       │  see decisions.md)   │                                │
       └────────┬─────────────┘                                │
                │                                              │
@@ -43,7 +43,7 @@ Exact file paths/formats: `docs/data-spec.md`. Pass/fail criteria:
                           │   Tr transform)    │
                           └─────────┬──────────┘
                                     │
-                    ┌───────────────┴────────────────┐
+                    ┌───────────────┴──────────────────┐
                     ▼                                  ▼
           ┌───────────────────┐              ┌─────────────────────┐
           │   evo_rpe/evo_ape │              │  accumulated point  │
