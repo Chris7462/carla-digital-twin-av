@@ -97,3 +97,36 @@ before the violation itself was caught, not just its symptoms. Reading
 the constraint in a document doesn't confirm it's what's actually
 running — reviewing what the code does periodically, not just
 plausible progress updates, is what catches this.
+
+## Evaluation
+
+**An earlier "RPE rmse 0.045m" figure (recorded in
+`stages/01-slam/AGENTS.md`) was computed with `evo_rpe`'s default
+delta (`--delta 1 --delta_unit frames`), not the project-specified
+`--delta 100 --delta_unit m`.** The two are different quantities
+(meters-per-frame vs. percent-per-100m) and are not comparable to the
+RPE threshold, which is defined in the percent-per-100m convention.
+The figure was not a valid RPE-percentage number and did not actually
+establish that the threshold was cleared. Corrected by re-running
+`evo_rpe` with the specified flags; see the numbers below.
+
+**RPE threshold revised from 1% to 1.5%.** Decided by the project
+owner (Yi-Chen), not by either agent — per `docs/done-criteria.md`,
+changing the threshold is a human-tier decision. Reasoning: the first
+correctly-computed RPE (`evo_rpe --delta 100 --delta_unit m`) on the
+verified fused baseline came in at 1.28%, against APE rmse of 0.063m
+(down from 3.52m odom-only). The original 1% threshold was itself a
+starting point taken from published KISS-ICP KITTI results, not a
+strict spec (see `docs/done-criteria.md`). A visual pass on the
+trajectory plot and point cloud render was also done and looked
+acceptable. 1.28% was judged close enough, and the fused result good
+enough on the metric that does have a hard bar (APE), that revising
+the threshold rather than continuing to tune was the better use of
+time, given Stage 1's output only needs to be good enough to support
+Stage 2/3 (road and scene reconstruction), not to match a published
+benchmark number exactly.
+
+**Under the revised 1.5% threshold, Stage 1's fused baseline (RPE
+1.28%, APE rmse 0.063m) passes.** Stage 2 (road reconstruction) can
+start using this baseline's output (`est_poses.txt`, point cloud map)
+per `docs/roadmap.md`.

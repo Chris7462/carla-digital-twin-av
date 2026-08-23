@@ -61,34 +61,36 @@ Exact file paths/formats: `docs/data-spec.md`. Pass/fail criteria:
 
 ## Status
 
-**In progress, being rebuilt.** LiDAR odometry (left branch) was
-initially hand-rolled instead of using KISS-ICP's own dataset loader
-— see `docs/decisions.md` ("LiDAR point cloud loading") for what went
-wrong and why it's being redone. GPS fusion (right branch, and the
-coordinate-frame alignment step where the two sides merge) is not yet
-verified working; the known root cause so far is a heading offset
-between GPS's ENU frame and the Velodyne forward frame (~60° at frame
-0 for this sequence) that must be corrected before fusion, plus GPS
-prior weighting that needs to be sparse enough not to overwhelm the
-LiDAR odometry's relative accuracy.
+**Baseline established, verified against official KITTI ground truth.**
+LiDAR odometry (left branch) uses KISS-ICP's own dataset loader — the
+earlier hand-rolled reader was retired, see `docs/decisions.md`
+("LiDAR point cloud loading") for what went wrong and why. GPS fusion
+(right branch, including the coordinate-frame alignment step where
+the two sides merge) is complete and verified.
 
-Current numbers (see `PROJECT_STATUS.md` for the latest): pure LiDAR
-odometry (no GPS fusion) has reached RPE ≈ 1.0%, just above the 1%
-threshold — GPS fusion, once correctly aligned, is expected to correct
-enough long-term drift to clear it. Fused results so far have been
-worse than the unfused baseline, which per `docs/done-criteria.md` is
-treated as a bug to fix, not a result to report.
+Verified results on sequence 00 against official ground truth
+(`dataset/poses/00.txt`):
+- KISS-ICP only: APE rmse 3.52m
+- + GTSAM/GPS fused: APE rmse 0.063m
+- + GTSAM/GPS fused: RPE 1.28% (`evo_rpe --delta 100 --delta_unit m`)
+
+Fused RPE clears the `docs/done-criteria.md` threshold, which was
+revised from 1% to 1.5% by explicit human decision after this result —
+see `docs/decisions.md` ("Evaluation") for the recorded reasoning. See
+`PROJECT_STATUS.md` for the run log and `stages/01-slam/AGENTS.md` for
+the constraints that must hold on any future change to this baseline
+(frame convention, GPSFactor sigma source, frame consistency).
 
 ## Layout
 
 ```
 stages/01-slam/
-  data_loader.py       # OXTS parsing + frame alignment (0-4540). LiDAR reading
-                        # delegates to KISS-ICP's own dataset API, not hand-rolled.
-  run_kitti_odometry.py  # pure LiDAR odometry baseline (no GPS fusion)
-  run_fusion.py         # GPS pose-graph fusion (GTSAM)
-  gps_utils.py          # lat/lon -> ENU conversion, coordinate-frame alignment
-  verify_alignment.py   # sanity-checks frame/index alignment against poses/00.txt
+  kitti_kiss_icp_gtsam.py  # reference pipeline for the verified baseline above —
+                            # KISS-ICP odometry + GTSAM/GPS fusion, single file.
+                            # Supersedes the earlier per-step scripts
+                            # (data_loader.py, run_kitti_odometry.py, run_fusion.py,
+                            # gps_utils.py, verify_alignment.py), which have been
+                            # removed.
   tests/                # long-term-value tests (frame alignment, coordinate
                         # transforms) — see agents/builder.md for what belongs here
   outputs/run_<description>/

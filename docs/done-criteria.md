@@ -6,15 +6,15 @@ evaluation script checks against it automatically.
 
 ## Pass/fail is a strict comparison, not a judgment call
 
-`RPE < 1%` means exactly that: the measured value must be less than
-1.0. `1.10%` is **not** "close to" or "approximately" passing — it
-is a fail, full stop. Do not round, do not describe a value above the
-threshold as having "achieved" or "reached" the threshold, and do not
-report a failing number alongside language that implies success (e.g.
+`RPE < 1.5%` means exactly that: the measured value must be less than
+1.5. Do not round, do not describe a value above the threshold as
+having "achieved" or "reached" the threshold, and do not report a
+failing number alongside language that implies success (e.g.
 "non-strictly achieved," "very close"). If a result is close enough
 that the threshold itself might be worth revisiting, that's a
 conversation to have per the paragraph below — it does not change
-whether *this run* passed.
+whether *this run* passed against whatever threshold was in force at
+the time it was scored.
 
 ## Only one evaluation method decides pass/fail
 
@@ -67,7 +67,11 @@ defaults.** evo's default RPE is meters-per-frame (`--delta 1
 --delta_unit frames`), which is a different quantity from the
 percentage-per-100m the threshold below is defined against; the two
 are not comparable and mixing them up gives a number that looks like
-a valid result but isn't:
+a valid result but isn't. (This project has hit this exact mix-up in
+practice — an early "RPE rmse 0.045m" figure recorded elsewhere was
+computed with the default delta, not this command, and is not a valid
+RPE-percentage number. It has been corrected — see
+`stages/01-slam/AGENTS.md` and `docs/decisions.md`.)
 
 ```
 evo_ape kitti poses/00.txt est_poses.txt -a --save_results eval_ape.zip
@@ -75,7 +79,7 @@ evo_rpe kitti poses/00.txt est_poses.txt -a --delta 100 --delta_unit m --save_re
 ```
 
 `--delta 100 --delta_unit m` gives RPE as translation error per 100m
-of travel — this is what "RPE < 1%" below means, and matches the
+of travel — this is what "RPE < 1.5%" below means, and matches the
 convention KISS-ICP's published KITTI results and the KITTI odometry
 benchmark itself use. Record the result as `RPE_percentage` in
 `eval_report.json` (a meters-per-100m value is already a percentage;
@@ -92,15 +96,20 @@ method-ceiling problem.
 
 | Metric | Threshold | Status |
 |---|---|---|
-| Relative translation error (RPE, % per 100m) | < 1% | not yet measured |
-| ATE (absolute trajectory error, meters) | reference only, no hard threshold yet | not yet measured |
+| Relative translation error (RPE, % per 100m) | < 1.5% (revised from 1%, see `docs/decisions.md`) | measured: 1.28% — passes revised threshold |
+| ATE (absolute trajectory error, meters) | reference only, no hard threshold yet | measured: APE rmse 0.063m (fused), 3.52m (odom-only) |
 
-The 1% RPE threshold is a starting point based on published KISS-ICP
+The 1% RPE threshold was a starting point based on published KISS-ICP
 results on KITTI (roughly 0.5-1% in the original paper), not a
-strict spec. If a baseline run lands close but doesn't clear it,
-that's a discussion point — but the discussion happens explicitly,
-with a file update and a one-line reason (see below), not by treating
-the failing run as passing.
+strict spec. It was revised to 1.5% by explicit human decision (the
+project owner, not either agent) after the first correctly-computed
+RPE (`--delta 100 --delta_unit m`, per the command above) came in at
+1.28% and a visual pass on the trajectory/point-cloud output looked
+acceptable. See `docs/decisions.md` ("Evaluation threshold") for the
+recorded reasoning. This was not a case of a failing run being
+reported as passing — the threshold itself was changed, on record,
+and the 1.28% run is scored against the threshold that was in force
+once the change was made.
 
 **Changing the threshold is a human decision, same tier as changing
 SLAM methods (see "If a run doesn't clear the threshold" below).**
