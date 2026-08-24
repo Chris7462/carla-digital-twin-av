@@ -6,13 +6,13 @@ See `docs/architecture.md` for the full diagram and rationale.
 
 ## Stage 1 — SLAM: Recorded vehicle data -> Global 3D map
 
-**Status**: in progress
+**Status**: baseline established, passes threshold
 
 | | |
 |---|---|
 | Input | KITTI Odometry Benchmark seq 00 (LiDAR) + raw sync OXTS (GPS/IMU) |
 | Output | `est_poses.txt` (KITTI pose format), accumulated point cloud map (`.pcd`) |
-| Pass criteria | see `docs/done-criteria.md` (ATE/RPE vs official ground truth) |
+| Pass criteria | RPE < 1.5% (`evo_rpe --delta 100 --delta_unit m`) — see `docs/reference.md` |
 | Folder | `stages/01-slam/` |
 
 ## Stage 2 — Road reconstruction: Global 3D map -> OpenDRIVE
@@ -55,4 +55,5 @@ See `docs/architecture.md` for the full diagram and rationale.
   stages are implemented.
 - Each stage's actual pass criteria gets written just before that
   stage starts, not upfront — writing it too early risks encoding
-  assumptions that don't hold once Stage 1's real output shape is known.
+  assumptions that don't hold once the real output shape of the prior
+  stage is known.

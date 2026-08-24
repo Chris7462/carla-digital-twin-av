@@ -3,32 +3,32 @@
 ## Mental model
 
 ```
-Recorded vehicle data
-        |
-   +----+----+------------+
+   Recorded vehicle data
+             |
+   +---------+------------+
    |         |            |
  LiDAR    Camera      GPS / IMU
    |         |            |
-   +----+----+------------+
-        |
-  Localization / SLAM              <-- Stage 1 (IN PROGRESS)
-        |
-  Global 3D map
-        |
-   +----+----------------------+
-   |                            |
+   +---------+------------+
+             |
+       Localization / SLAM              <-- Stage 1 (baseline established)
+             |
+       Global 3D map
+             |
+   +---------+-----------------+
+   |                           |
  Road reconstruction      Scene reconstruction
-   |                            |
- lanes / centerlines       buildings / trees /
- intersections / signs     poles / terrain etc.
-   |                            |
+   |                           |
+ lanes / centerlines      buildings / trees /
+ intersections / signs    poles / terrain etc.
+   |                           |
  OpenDRIVE (.xodr)          3D Mesh (FBX/OBJ/UE)
-   |  Stage 2 (NOT STARTED) |  Stage 3 (NOT STARTED)
-   +----+----------------------+
-        |
-      CARLA                       <-- Stage 4 (NOT STARTED)
-        |
-  Digital Twin Map
+   |  Stage 2 (NOT STARTED)    |  Stage 3 (NOT STARTED)
+   +---------+-----------------+
+             |
+           CARLA                       <-- Stage 4 (NOT STARTED)
+             |
+       Digital Twin Map
 ```
 
 CARLA needs two things for a conventional custom map: 3D geometry (mesh)
@@ -37,26 +37,25 @@ two artifacts exists to produce them from recorded vehicle sensor data.
 
 ## Where we are
 
-**Stage 1 (SLAM) is the only stage under active implementation.**
-Stages 2-4 are placeholders — folder + README describing the expected
-interface only, no implementation yet.
+**Stage 1 (SLAM) baseline is established and passes the current
+threshold.** Stages 2-4 are placeholders — folder + README describing
+the expected interface only, no implementation yet.
 
 ## Stage 1: Recorded vehicle data -> Global 3D map
 
-Detailed spec lives in `docs/data-spec.md` and `docs/decisions.md`.
-Summary:
+Full data paths, calibration, method rationale, and evaluation details:
+`docs/reference.md`. Summary:
 
 - **Input**: KITTI Odometry Benchmark sequence 00 (LiDAR, motion-compensated,
   official) + raw sync OXTS (GPS/IMU) for the same sequence, frame-aligned
   0-4540.
-- **LiDAR odometry**: KISS-ICP (off-the-shelf pip package, not hand-rolled).
+- **LiDAR odometry**: KISS-ICP (off-the-shelf, own dataset API).
 - **Fusion**: loosely-coupled pose graph (GTSAM) — LiDAR odometry
-  between-factors + GPS prior-factors. Not tightly-coupled LIO (KITTI's
-  10Hz OXTS is too low-rate for meaningful IMU preintegration).
+  between-factors + GPS prior-factors.
 - **Output**: `est_poses.txt` (KITTI pose format) + accumulated point
   cloud map.
 - **Evaluation**: `evo_ape` / `evo_rpe` against official `poses/00.txt`
-  ground truth. Threshold in `docs/done-criteria.md`.
+  ground truth. RPE 1.28%, passes the < 1.5% threshold.
 
 ## Stage 2: Global 3D map -> Road reconstruction (not started)
 

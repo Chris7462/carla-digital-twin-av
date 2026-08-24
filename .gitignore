@@ -16,5 +16,4 @@ __pycache__/
 # OS/editor noise
 *.swp
 
-# opencode local session state, if any gets written into the repo dir
-.opencode/
+results/
